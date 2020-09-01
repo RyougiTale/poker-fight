@@ -1,0 +1,30 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "C/C++: g++.exe build active file",
+            "command": "C:/Users/jiyudage/scoop/apps/gcc/current/bin/g++.exe",
+            "args": [
+                "-g",
+                "${file}",
+                "-I",
+                "G:/cpp_no1/boost_1_73_0/boost_1_73_0/",
+                "-o",
+                "${fileDirname}\\${fileBasenameNoExtension}.exe",
+                "-lwsock32",
+                "-lws2_32"
+            ],
+            "options": {
+                "cwd": "C:/Users/jiyudage/scoop/apps/gcc/current/bin"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ],
+    "version": "2.0.0"
+}
