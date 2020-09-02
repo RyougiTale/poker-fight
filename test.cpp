@@ -4,68 +4,71 @@
 #include <string>
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
+#include <random>
 
 using namespace boost;
 using namespace std;
 using boost::asio::ip::tcp;
+using std::default_random_engine;
 
 int main()
 {
+    asio::io_service io_service;
+    tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), 3200));
+    boost::asio::ip::address robots[2];
+    boost::array<char, 128> buf[2];
+    boost::system::error_code error;
+    //initial
+    int connect = 0;
+    int first = -1;
+    default_random_engine e;
+    tcp::socket socket_pool[2] = {tcp::socket(io_service), tcp::socket(io_service)};
+    system::error_code error_pool[2];
     try
     {
-        asio::io_service io_service;
-        tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), 3200));
-        boost::asio::ip::address robots[2];
-        int connect = 0;
-        boost::array<char, 128> buf;
-        boost::system::error_code error;
-
-            tcp::socket socket(io_service);
-            acceptor.accept(socket);
         for (;;)
         {
-            if(socket.is_open()) cout << "111" << endl;
-            else cout<< "222" << endl;
-            // if(socket.e)
-            if(acceptor.is_open()) cout << "true" << endl;
-            else{
-                // acceptor
-                cout << "false" << endl;
-            }
             if (connect < 2)
             {
-                // if(socket.remote_endpoint().data() == "ready"){}
-                robots[connect++] = socket.remote_endpoint().address();
+                cout << connect << endl;
+                acceptor.accept(socket_pool[connect]);
+                robots[connect] = socket_pool[connect].remote_endpoint().address();
+                connect++;
+                continue;
             }
-            else
+
+            first = e() % 2;
+            socket_pool[first].write_some(asio::buffer("you first, are you ready?"), error_pool[first]);
+            socket_pool[first].read_some(boost::asio::buffer(buf[first]), error);
+            while ((string)(buf[first].data()) != "ready")
             {
-                string msg = "are you ready?";
+                socket_pool[first].write_some(asio::buffer("you first, are you ready?"), error_pool[first]);
+                socket_pool[first].read_some(boost::asio::buffer(buf[first]), error);
+            }
+            socket_pool[1 - first].write_some(asio::buffer("you second, are you ready?"), error_pool[1 - first]);
+            socket_pool[1 - first].read_some(boost::asio::buffer(buf[1 - first]), error);
+            while ((string)(buf[1 - first].data()) != "ready")
+            {
+                socket_pool[1 - first].write_some(asio::buffer("you second, are you ready?"), error_pool[1 - first]);
+                socket_pool[1 - first].read_some(boost::asio::buffer(buf[1 - first]), error);
+            }
+            // game begin
+            while (true)
+            {
+                cout << "game begin" << endl;
             }
 
-            
-            size_t len = socket.read_some(boost::asio::buffer(buf), error);
-            std::cout.write(buf.data(), len);
-
-            std::cout << socket.remote_endpoint().address() << std::endl;
-            cout << socket.remote_endpoint().capacity() << endl;
-            cout << socket.remote_endpoint().data() << endl;
-            cout << socket.remote_endpoint().port() << endl;
-            cout << socket.remote_endpoint().protocol().type() << endl;
-            cout << socket.remote_endpoint().size() << endl;
-            time_t now = time(0);
-            std::string message = ctime(&now);
-
-            system::error_code ignored_error;
-            socket.write_some(asio::buffer(message), ignored_error);
-            if (ignored_error)
+            if (error_pool[first])
             {
-                std::cout << boost::system::system_error(ignored_error).what() << std::endl;
-                cout << "333 " << ignored_error.value() << endl;
-                cout << "555 " << ignored_error.message() << endl;
-
-                // break;
-                socket.close();
-                acceptor.accept(socket);
+                std::cout << boost::system::system_error(error_pool[first]).what() << std::endl;
+                socket_pool[first].close();
+                acceptor.accept(socket_pool[first]);
+            }
+            if (error_pool[1 - first])
+            {
+                std::cout << boost::system::system_error(error_pool[1 - first]).what() << std::endl;
+                socket_pool[1 - first].close();
+                acceptor.accept(socket_pool[1 - first]);
             }
         }
     }
@@ -76,3 +79,23 @@ int main()
     }
     return 0;
 }
+
+// socket_pool[first].write_some(asio::buffer("first"), error_pool[first]);
+// socket_pool[1 - first].write_some(asio::buffer("second"), error_pool[1 - first]);
+
+// std::this_thread::sleep_for(chrono::seconds(2));
+
+// size_t len = socket.read_some(boost::asio::buffer(buf), error);
+// std::cout.write(buf.data(), len);
+
+// std::cout << socket.remote_endpoint().address() << std::endl;
+// cout << socket.remote_endpoint().capacity() << endl;
+// cout << socket.remote_endpoint().data() << endl;
+// cout << socket.remote_endpoint().port() << endl;
+// cout << socket.remote_endpoint().protocol().type() << endl;
+// cout << socket.remote_endpoint().size() << endl;
+// time_t now = time(0);
+// std::string message = ctime(&now);
+
+// cout << "333 " << ignored_error.value() << endl;
+// cout << "555 " << ignored_error.message() << endl;
